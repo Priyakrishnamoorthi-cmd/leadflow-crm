@@ -4,6 +4,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const leadRoutes = require('./routes/leadRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 
@@ -15,6 +16,7 @@ mongoose.connect(process.env.MONGO_URI)
   .catch((err) => console.log('MongoDB Error ❌', err));
 
 app.use('/api/leads', leadRoutes);
+app.use('/api/auth', authRoutes);
 
 app.get('/', (req, res) => {
   res.send('LeadFlow CRM Backend Running 🚀');

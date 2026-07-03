@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import Login from './Login'
 import './App.css'
 
 const API = 'http://localhost:5000/api/leads'
 
 function App() {
+  const [user, setUser] = useState(null)
   const [leads, setLeads] = useState([])
   const [form, setForm] = useState({
     name: '', email: '', phone: '', company: '', status: 'New', notes: ''
@@ -12,24 +14,46 @@ function App() {
   const [editId, setEditId] = useState(null)
 
   useEffect(() => {
-    fetchLeads()
+    const token = localStorage.getItem('token')
+    if (token) {
+      setUser({ token })
+      fetchLeads(token)
+    }
   }, [])
 
-  const fetchLeads = async () => {
-    const res = await axios.get(API)
+  const fetchLeads = async (token) => {
+    const res = await axios.get(API, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
     setLeads(res.data)
+  }
+
+  const handleLogin = (userData) => {
+    setUser(userData)
+    fetchLeads(localStorage.getItem('token'))
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    setUser(null)
+    setLeads([])
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const token = localStorage.getItem('token')
     if (editId) {
-      await axios.put(`${API}/${editId}`, form)
+      await axios.put(`${API}/${editId}`, form, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
       setEditId(null)
     } else {
-      await axios.post(API, form)
+      await axios.post(API, form, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
     }
     setForm({ name: '', email: '', phone: '', company: '', status: 'New', notes: '' })
-    fetchLeads()
+    fetchLeads(token)
   }
 
   const handleEdit = (lead) => {
@@ -38,13 +62,21 @@ function App() {
   }
 
   const handleDelete = async (id) => {
-    await axios.delete(`${API}/${id}`)
-    fetchLeads()
+    const token = localStorage.getItem('token')
+    await axios.delete(`${API}/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    fetchLeads(token)
   }
+
+  if (!user) return <Login onLogin={handleLogin} />
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial' }}>
-      <h1>LeadFlow CRM 🚀</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <h1>LeadFlow CRM 🚀</h1>
+        <button onClick={handleLogout} style={{ height: '35px' }}>Logout</button>
+      </div>
 
       <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }}>
         <input placeholder="Name*" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required /><br/><br/>
